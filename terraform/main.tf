@@ -79,7 +79,7 @@ resource "aws_route_table" "demo_rt" {
 # Availability Zones
 data "aws_availability_zones" "available" {}
 
-# Subnet
+# Public Subnet
 resource "aws_subnet" "demo_subnet" {
   vpc_id                  = aws_vpc.demo_vpc.id
   cidr_block              = "10.0.1.0/24"
@@ -100,11 +100,11 @@ resource "aws_route_table_association" "demo_rta" {
 # Security Group
 resource "aws_security_group" "demo_sg" {
   name        = "demo-sg"
-  description = "Allow SSH and HTTP traffic"
+  description = "Allow SSH and HTTP access"
   vpc_id      = aws_vpc.demo_vpc.id
 
   ingress {
-    description = "SSH"
+    description = "SSH Access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -112,7 +112,7 @@ resource "aws_security_group" "demo_sg" {
   }
 
   ingress {
-    description = "HTTP"
+    description = "HTTP Access"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -131,7 +131,7 @@ resource "aws_security_group" "demo_sg" {
   }
 }
 
-# Latest Ubuntu 22.04 AMI
+# Latest Ubuntu 22.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -148,21 +148,23 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# EC2 Instance
+# Free Tier EC2 Instance
 resource "aws_instance" "demo_instance" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.demo_subnet.id
-  key_name               = aws_key_pair.demo_keypair.key_name
-  vpc_security_group_ids = [aws_security_group.demo_sg.id]
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = "t2.micro"
+  subnet_id                   = aws_subnet.demo_subnet.id
+  key_name                    = aws_key_pair.demo_keypair.key_name
+  vpc_security_group_ids      = [aws_security_group.demo_sg.id]
+  associate_public_ip_address = true
 
   user_data = <<-EOF
-              #!/bin/bash
-              apt-get update -y
-              apt-get install -y python3 python3-pip python3-venv
-              EOF
+#!/bin/bash
+apt-get update -y
+apt-get install -y python3 python3-pip python3-venv
+EOF
 
   tags = {
     Name = "demo-instance"
   }
 }
+``
