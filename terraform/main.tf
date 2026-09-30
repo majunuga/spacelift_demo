@@ -76,13 +76,15 @@ resource "aws_route_table" "demo_rt" {
   }
 }
 
+# Availability Zones
+data "aws_availability_zones" "available" {}
+
 # Subnet
 resource "aws_subnet" "demo_subnet" {
   vpc_id                  = aws_vpc.demo_vpc.id
   cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
-
-  availability_zone = "${var.aws_region}a"
 
   tags = {
     Name = "demo-subnet"
@@ -96,4 +98,71 @@ resource "aws_route_table_association" "demo_rta" {
 }
 
 # Security Group
-resource "aws_security_group" "demo
+resource "aws_security_group" "demo_sg" {
+  name        = "demo-sg"
+  description = "Allow SSH and HTTP traffic"
+  vpc_id      = aws_vpc.demo_vpc.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "demo-sg"
+  }
+}
+
+# Latest Ubuntu 22.04 AMI
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  owners = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# EC2 Instance
+resource "aws_instance" "demo_instance" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.demo_subnet.id
+  key_name               = aws_key_pair.demo_keypair.key_name
+  vpc_security_group_ids = [aws_security_group.demo_sg.id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y python3 python3-pip python3-venv
+              EOF
+
+  tags = {
+    Name = "demo-instance"
+  }
+}
