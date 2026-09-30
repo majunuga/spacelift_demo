@@ -76,7 +76,7 @@ resource "aws_route_table" "demo_rt" {
   }
 }
 
-# Availability Zones
+# Get Availability Zones
 data "aws_availability_zones" "available" {}
 
 # Public Subnet
@@ -104,7 +104,7 @@ resource "aws_security_group" "demo_sg" {
   vpc_id      = aws_vpc.demo_vpc.id
 
   ingress {
-    description = "SSH Access"
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -112,7 +112,7 @@ resource "aws_security_group" "demo_sg" {
   }
 
   ingress {
-    description = "HTTP Access"
+    description = "HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -148,14 +148,20 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-# Free Tier EC2 Instance
+# EC2 Instance
 resource "aws_instance" "demo_instance" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
+  instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.demo_subnet.id
   key_name                    = aws_key_pair.demo_keypair.key_name
   vpc_security_group_ids      = [aws_security_group.demo_sg.id]
   associate_public_ip_address = true
+
+  root_block_device {
+    volume_size = 8
+    volume_type = "gp3"
+    encrypted   = true
+  }
 
   user_data = <<-EOF
 #!/bin/bash
@@ -164,7 +170,6 @@ apt-get install -y python3 python3-pip python3-venv
 EOF
 
   tags = {
-    Name = "demo-instance"
+    Name = "ubuntu-t3-micro"
   }
 }
-
