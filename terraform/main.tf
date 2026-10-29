@@ -47,6 +47,6 @@ resource "aws_ssm_parameter" "private_key" {
 }
 
 # Create AWS Key Pair
-resource "aws_key_pair" "demo_keypair" {
+resource "aws_key_pair" "demo_keypair" 
   key_name   = "demo-keypair-$
-}
+
