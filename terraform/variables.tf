@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS deployment region"
+  description = "AWS Region"
   type        = string
   default     = "us-west-2"
 }
